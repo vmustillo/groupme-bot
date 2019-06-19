@@ -1,0 +1,1 @@
+# Hot Take Bot
