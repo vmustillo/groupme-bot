@@ -6,4 +6,5 @@ import (
 
 func main() {
 	b := bot.InitBot("config.json")
+	msgDump := b.GetMessages(20)
 }
