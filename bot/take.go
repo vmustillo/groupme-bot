@@ -2,6 +2,8 @@ package bot
 
 import (
 	"encoding/json"
+	"regexp"
+	"fmt"
 )
 
 // Response contains Messages
@@ -27,4 +29,21 @@ func ParseMessages(data []byte) *Response {
 	json.Unmarshal(data, &res)
 	
 	return &res
+}
+
+// SearchMessages searches through the group messages for a specified string (does not take capitalization into consideration)
+func (res *Response) SearchMessages(str string) []Message {
+	var matchedMessages []Message
+	reg := fmt.Sprintf("(?i)%s", str)
+
+	for _, v := range res.Data.Messages {
+		match, err := regexp.MatchString(reg, v.Message)
+		if err != nil {
+			Handle(err)
+		} else if match {
+			matchedMessages = append(matchedMessages, v)
+		}
+	}
+
+	return matchedMessages
 }

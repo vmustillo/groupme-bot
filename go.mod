@@ -1,3 +1,3 @@
-module github.com/vmustillo/hot-take-bot
+module github.com/vmustillo/groupme-response-bot
 
 go 1.12
