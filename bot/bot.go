@@ -91,12 +91,27 @@ func (bot *Bot) StoreMessage(msg Message) error {
 	return nil
 }
 
+// MessageExists returns true if a message in the db is found with the same id
+func (bot *Bot) MessageExists(msg Message) bool {
+	var m Message
+
+	filter := bson.D{{"id", msg.MsgID}}
+	collection := bot.DB.Collection("messages")
+	err := collection.FindOne(context.Background(), filter).Decode(&m)
+
+	if err != nil {
+		log.Print("No new unique messages found")
+		return false
+	}
+	return true
+}
+
 // StoreUser stores an array of Users in the database 
 func (bot *Bot) StoreUser(sender string, senderID string) error {
 	collection := bot.DB.Collection("members")
 	insert, err := collection.InsertOne(context.Background(), User{senderID, sender})
 	if err != nil {
-		Handle(err)
+		log.Print("No new users found")
 		return err
 	}
 

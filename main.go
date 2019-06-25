@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/vmustillo/groupme-response-bot/bot"
 )
 
@@ -11,9 +13,13 @@ func main() {
 
 	hotTakes := res.SearchMessages("hot take")
 	for _, v := range hotTakes {
-		b.StoreMessage(v)
+		if !b.MessageExists(v) {
+			b.StoreMessage(v)
+		}
 		if !b.UserExists(v.SenderID) {
 			b.StoreUser(v.Sender, v.SenderID)
+		} else {
+			fmt.Println("No new users found")
 		}
 	}
 }
