@@ -8,19 +8,20 @@ import (
 
 // Response contains Messages
 type Response struct {
-	Data Messages `json:"response"`
+	Data Messages `bson:"response" json:"response"`
 }
 
 // Messages a slice of type Message
 type Messages struct {
-	Messages []Message `json:"messages"`
+	Messages []Message `bson:"messages" json:"messages"`
 }
 
 // Message contains an ID, Name of who sent the message, and the text it contains
 type Message struct {
-	MsgID string `json:"id"`
-	From string `json:"name"`
-	Message string `json:"text"`
+	MsgID string `bson:"id" json:"id"`
+	Sender string `bson:"name" json:"name"`
+	SenderID string `bson:"sender_id" json:"sender_id"`
+	Message string `bson:"text" json:"text"`
 }
 
 // ParseMessages Unmarshals a slice of bytes into a Response of Messages

@@ -10,4 +10,10 @@ func main() {
 	res := bot.ParseMessages(msgDump)
 
 	hotTakes := res.SearchMessages("hot take")
+	for _, v := range hotTakes {
+		b.StoreMessage(v)
+		if !b.UserExists(v.SenderID) {
+			b.StoreUser(v.Sender, v.SenderID)
+		}
+	}
 }
