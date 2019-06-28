@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"context"
 	"time"
+	"math/rand"
+	"bytes"
 )
 
 // Bot is the bot that will be used to send all requests to the GroupMe API
@@ -18,6 +20,7 @@ type Bot struct {
 	GroupID int64 `json:"group_id"`
 	AccessToken string `json:"access_token"`
 	DBUri string `json:"dburi"`
+	SourceGUID string `json:"source_guid"`
 	DB *mongo.Database
 }
 
@@ -25,6 +28,15 @@ type Bot struct {
 type User struct {
 	SenderID string `bson:"sender_id" json:"sender_id"`
 	Sender string `bson:"name" json:"name"`
+}
+
+type Reply struct {
+	Message ResponseData `bson:"message" json:"message"`
+}
+
+type ResponseData struct {
+	SourceGUID string `bson:"source_guid" json:"source_guid"`
+	Text string `bson:"text" json:"text"`
 }
 
 // InitBot stores the group_id and token needed to make requests for a certain group
@@ -131,6 +143,30 @@ func (bot *Bot) UserExists(senderID string) bool {
 		return false
 	}
 	return true
+}
+
+func (bot *Bot) RespondToMessage(msg Message) error {
+	responses := [...]string{"Sheesh that is SCORCHING", "LMAOOOOOOOOO Berg give this man his phone back", "No gas no cap no gascap that's actually a takepiece", "yeah okay and Chase ran a sub 14 second mile....", "That's actually a good take", "the Padres are actually ass", "Moe Harkless hit a buzzer-beater against the Knicks"}
+	rand.Seed(time.Now().UnixNano())
+	randomResponseIndex := rand.Intn(len(responses)-0) + 0
+	fmt.Println(randomResponseIndex)
+
+	replyData := ResponseData{bot.SourceGUID, responses[randomResponseIndex]}
+	reply := Reply{replyData}
+	jsonReply, err := json.Marshal(reply)
+	
+	if err != nil {
+		Handle(err)
+		return err
+	}
+
+	fmt.Println(string(jsonReply))
+	
+	queryString := fmt.Sprintf("https://api.groupme.com/v3/groups/%d/messages?token=%s", bot.GroupID, bot.AccessToken)
+	res, err := http.Post(queryString, "application/json", bytes.NewBuffer(jsonReply))
+
+	res.Body.Close()
+	return nil
 }
 
 // Handle is a simple error handler to log errors call a panic

@@ -15,6 +15,7 @@ func main() {
 	for _, v := range hotTakes {
 		if !b.MessageExists(v) {
 			b.StoreMessage(v)
+			b.RespondToMessage(v)
 		}
 		if !b.UserExists(v.SenderID) {
 			b.StoreUser(v.Sender, v.SenderID)
