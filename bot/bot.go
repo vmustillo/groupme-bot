@@ -1,36 +1,37 @@
 package bot
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
-	"fmt"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/bson"
-	"context"
-	"time"
-	"math/rand"
-	"bytes"
 )
 
 // Bot is the bot that will be used to send all requests to the GroupMe API
 type Bot struct {
-	GroupID int64 `json:"group_id"`
+	GroupID     int64  `json:"group_id"`
 	AccessToken string `json:"access_token"`
-	DBUri string `json:"dburi"`
-	SourceGUID string `json:"source_guid"`
-	DB *mongo.Database
+	DBUri       string `json:"dburi"`
+	SourceGUID  string `json:"source_guid"`
+	DB          *mongo.Database
 }
 
-// User holds the sender_id and sender name to store in the database 
+// User holds the sender_id and sender name to store in the database
 type User struct {
 	SenderID string `bson:"sender_id" json:"sender_id"`
-	Sender string `bson:"name" json:"name"`
+	Sender   string `bson:"name" json:"name"`
 }
 
-// Reply type holds response data needed to post a reply to the API 
+// Reply type holds response data needed to post a reply to the API
 type Reply struct {
 	Message ResponseData `bson:"message" json:"message"`
 }
@@ -38,7 +39,7 @@ type Reply struct {
 // ResponseData contains source_guid for the message ID and actual text that is sent to the group
 type ResponseData struct {
 	SourceGUID string `bson:"source_guid" json:"source_guid"`
-	Text string `bson:"text" json:"text"`
+	Text       string `bson:"text" json:"text"`
 }
 
 // InitBot stores the group_id and token needed to make requests for a certain group
@@ -80,7 +81,7 @@ func InitBot(configFile string) *Bot {
 // GetMessages makes a get request to the GroupMe API and returns a specified number of messages
 func (bot *Bot) GetMessages(numMsgs int) []byte {
 	queryString := fmt.Sprintf("https://api.groupme.com/v3/groups/%d/messages?limit=%d&token=%s", bot.GroupID, numMsgs, bot.AccessToken)
-	
+
 	res, err := http.Get(queryString)
 	if err != nil {
 		Handle(err)
@@ -120,7 +121,7 @@ func (bot *Bot) MessageExists(msg Message) bool {
 	return true
 }
 
-// StoreUser stores an array of Users in the database 
+// StoreUser stores an array of Users in the database
 func (bot *Bot) StoreUser(sender string, senderID string) error {
 	collection := bot.DB.Collection("members")
 	insert, err := collection.InsertOne(context.Background(), User{senderID, sender})
@@ -149,20 +150,22 @@ func (bot *Bot) UserExists(senderID string) bool {
 
 // RespondToMessage takes a message as a parameter and chooses a random response to reply with from an array
 func (bot *Bot) RespondToMessage(msg Message) error {
-	responses := [...]string{"Sheesh that is SCORCHING", "LMAOOOOOOOOO Berg give this man his phone back", "No gas no cap no gascap that's actually a takepiece", "yeah okay and Chase ran a sub 14 second mile....", "That's actually a good take", "the Padres are actually ass", "Moe Harkless hit a buzzer-beater against the Knicks"}
+	responses := [...]string{"lol", "That's a freezing cold take", "That's a scorching take", "yeah okay....", "That's actually a good take", "the Padres are actually garbage", "Moe Harkless hit a buzzer-beater against the Knicks"}
 	rand.Seed(time.Now().UnixNano())
 	randomResponseIndex := rand.Intn(len(responses)-0) + 0
 	fmt.Println(randomResponseIndex)
 
-	replyData := ResponseData{bot.SourceGUID, responses[randomResponseIndex]}
+	replyText := "@" + msg.Sender + " " + responses[randomResponseIndex] + "\n\nTake has been stored."
+
+	replyData := ResponseData{bot.SourceGUID, replyText}
 	reply := Reply{replyData}
 	jsonReply, err := json.Marshal(reply)
-	
+
 	if err != nil {
 		Handle(err)
 		return err
 	}
-	
+
 	queryString := fmt.Sprintf("https://api.groupme.com/v3/groups/%d/messages?token=%s", bot.GroupID, bot.AccessToken)
 	res, err := http.Post(queryString, "application/json", bytes.NewBuffer(jsonReply))
 
